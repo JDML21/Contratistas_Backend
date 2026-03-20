@@ -106,3 +106,65 @@ export const register = async (req, res) => {
   }
 };
 
+export const refresh = async (req, res) => {
+  try {
+    const token = req.cookies.refreshToken;
+
+    if (!token) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+
+    jwt.verify(token, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ error: 'Refresh token inválido' });
+      }
+
+      const usuario = await Usuario.findById(decoded.id);
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const newAccessToken = generateAccessToken(usuario);
+      const newRefreshToken = generateRefreshToken(usuario);
+
+      res
+        .cookie('accessToken', newAccessToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'None',
+          maxAge: 1000 * 60 * 15,
+        })
+        .cookie('refreshToken', newRefreshToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'None',
+          maxAge: 1000 * 60 * 60 * 24 * 7,
+        })
+        .json({ message: 'Token renovado' });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    res
+      .clearCookie('accessToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+      })
+      .clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+      })
+      .status(204)
+      .json({ message: 'Logout exitoso' });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
