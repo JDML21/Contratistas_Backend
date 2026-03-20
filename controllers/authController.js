@@ -1,46 +1,52 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import Usuario from '../models/Usuario.js';
 
-// Generar JWT Token
-const generarToken = (usuarioId) => {
-  return jwt.sign({ id: usuarioId }, process.env.JWT_SECRET, { expiresIn: '7d' });
-};
+import { generateAccessToken, generateRefreshToken } from '../lib/token.js';
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validar que email y contraseña estén presentes
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña son requeridos' });
     }
 
-    // Buscar usuario por email
     const usuario = await Usuario.findOne({ email });
     if (!usuario) {
-      return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+      return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Verificar contraseña
     const esValida = await bcrypt.compare(password, usuario.password);
     if (!esValida) {
-      return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+      return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Generar token
-    const token = generarToken(usuario.id);
+    const accessToken = generateAccessToken(usuario);
+    const refreshToken = generateRefreshToken(usuario);
 
-    res.json({
-      message: 'Login exitoso',
-      token,
-      user: {
-        id: usuario.id,
-        nombre: usuario.nombre,
-        email: usuario.email,
-        rol: usuario.rol,
-      },
-    });
+    res
+      .cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        maxAge: 1000 * 60 * 15, // 15 min
+      })
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 días
+      })
+      .json({
+        message: 'Login exitoso',
+        user: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          email: usuario.email,
+          rol: usuario.rol,
+        },
+      });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -50,22 +56,17 @@ export const register = async (req, res) => {
   try {
     const { nombre, email, password, rol } = req.body;
 
-    // Validar datos requeridos
     if (!nombre || !email || !password) {
       return res.status(400).json({ error: 'Nombre, email y contraseña son requeridos' });
     }
 
-    // Verificar si el usuario ya existe
     const usuarioExistente = await Usuario.findOne({ email });
     if (usuarioExistente) {
       return res.status(400).json({ error: 'El email ya está registrado' });
     }
 
-    // Encriptar contraseña
-    const saltRounds = 10;
-    const passwordHasheada = await bcrypt.hash(password, saltRounds);
+    const passwordHasheada = await bcrypt.hash(password, 10);
 
-    // Crear nuevo usuario
     const nuevoUsuario = await Usuario.create({
       nombre,
       email,
@@ -73,20 +74,35 @@ export const register = async (req, res) => {
       rol: rol || 'empleado',
     });
 
-    // Generar token
-    const token = generarToken(nuevoUsuario.id);
+    const accessToken = generateAccessToken(nuevoUsuario);
+    const refreshToken = generateRefreshToken(nuevoUsuario);
 
-    res.status(201).json({
-      message: 'Usuario registrado exitosamente',
-      token,
-      user: {
-        id: nuevoUsuario.id,
-        nombre: nuevoUsuario.nombre,
-        email: nuevoUsuario.email,
-        rol: nuevoUsuario.rol,
-      },
-    });
+    res
+      .cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        maxAge: 1000 * 60 * 15,
+      })
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      })
+      .status(201)
+      .json({
+        message: 'Usuario registrado exitosamente',
+        user: {
+          id: nuevoUsuario.id,
+          nombre: nuevoUsuario.nombre,
+          email: nuevoUsuario.email,
+          rol: nuevoUsuario.rol,
+        },
+      });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
