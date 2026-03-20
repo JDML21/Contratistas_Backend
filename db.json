@@ -82,6 +82,14 @@
       "password": "$2b$10$.uH08QUWDsM.61bsMh/NguZvopka0TxRSZpl/qHuxyHCA6NAClNtC",
       "rol": "empleado",
       "createdAt": "2026-03-17T15:20:10.307Z"
+    },
+    {
+      "id": 11,
+      "nombre": "Prueba Usuario",
+      "email": "prueba@test.com",
+      "password": "$2b$10$DsJ5DRi3HXFFn.L5m328F.J/1yGBXx8vrb.yXnmrzYX3zLlNS5wwK",
+      "rol": "empleado",
+      "createdAt": "2026-03-20T17:53:06.712Z"
     }
   ],
   "contratos": [],

@@ -3,8 +3,8 @@ import jwt from 'jsonwebtoken';
 import Usuario from '../models/Usuario.js';
 
 // Generar JWT Token
-const generarToken = (usuarioId) => {
-  return jwt.sign({ id: usuarioId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const generarToken = (usuario) => {
+  return jwt.sign({ id: usuario.id, rol: usuario.rol }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
 export const login = async (req, res) => {
@@ -29,7 +29,7 @@ export const login = async (req, res) => {
     }
 
     // Generar token
-    const token = generarToken(usuario.id);
+    const token = generarToken(usuario);
 
     res.json({
       message: 'Login exitoso',
@@ -74,7 +74,7 @@ export const register = async (req, res) => {
     });
 
     // Generar token
-    const token = generarToken(nuevoUsuario.id);
+    const token = generarToken(nuevoUsuario);
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
@@ -84,6 +84,27 @@ export const register = async (req, res) => {
         nombre: nuevoUsuario.nombre,
         email: nuevoUsuario.email,
         rol: nuevoUsuario.rol,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const me = async (req, res) => {
+  try {
+    const usuario = await Usuario.findOne({ id: req.usuario?.id });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      user: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        email: usuario.email,
+        rol: usuario.rol,
       },
     });
   } catch (error) {
