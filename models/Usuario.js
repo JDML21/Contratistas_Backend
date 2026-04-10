@@ -1,53 +1,36 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import pool from '../config/db.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, '../db.json');
-
-// Leer BD desde JSON
-const leerDB = () => {
-  try {
-    const datos = fs.readFileSync(dbPath, 'utf-8');
-    return JSON.parse(datos);
-  } catch (error) {
-    console.error('Error leyendo db.json:', error);
-    return { usuarios: [] };
-  }
-};
-
-// Escribir BD en JSON
-const guardarDB = (datos) => {
-  try {
-    fs.writeFileSync(dbPath, JSON.stringify(datos, null, 2), 'utf-8');
-  } catch (error) {
-    console.error('Error escribiendo db.json:', error);
-  }
-};
-
-// Simulación de modelo Usuario
 const usuarioModel = {
+  // Busca por correo o usuario_id
   findOne: async (query) => {
-    const bd = leerDB();
-    const usuario = bd.usuarios.find(u => {
-      if (query.email) return u.email === query.email;
-      if (query.id) return u.id === query.id;
-      return false;
-    });
-    return usuario || null;
+    let result;
+    if (query.correo) {
+      result = await pool.query(
+        'SELECT * FROM usuario WHERE correo = $1 LIMIT 1',
+        [query.correo]
+      );
+    } else if (query.usuario_id) {
+      result = await pool.query(
+        'SELECT * FROM usuario WHERE usuario_id = $1 LIMIT 1',
+        [query.usuario_id]
+      );
+    } else {
+      return null;
+    }
+    return result.rows[0] || null;
   },
 
+  // Campos requeridos: correo, contrasena_hash, identificacion, nombre
+  // Opcional: tipo_documento
   create: async (datos) => {
-    const bd = leerDB();
-    const nuevoID = Math.max(...bd.usuarios.map(u => u.id), 0) + 1;
-    const nuevoUsuario = {
-      id: nuevoID,
-      ...datos,
-      createdAt: new Date().toISOString(),
-    };
-    bd.usuarios.push(nuevoUsuario);
-    guardarDB(bd);
-    return nuevoUsuario;
+    const { correo, contrasena_hash, identificacion, nombre, tipo_documento = null } = datos;
+    const result = await pool.query(
+      `INSERT INTO usuario (correo, contrasena_hash, identificacion, nombre, tipo_documento)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [correo, contrasena_hash, identificacion, nombre, tipo_documento]
+    );
+    return result.rows[0];
   },
 };
 
