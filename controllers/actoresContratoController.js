@@ -2,7 +2,7 @@ import ActoresContrato from '../models/ActoresContrato.js';
 
 export const getActoresByContrato = async (req, res) => {
   try {
-    const actores = await ActoresContrato.findByContrato(req.params.contrato_id);
+    const actores = await ActoresContrato.findByContratoWithUser(req.params.contrato_id);
     res.json({ actores });
   } catch (error) {
     res.status(500).json({ error: error.message });

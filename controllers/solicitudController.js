@@ -1,8 +1,18 @@
 import Solicitud from '../models/Solicitud.js';
 
+const TIPO_ACTOR_MAP = {
+  contratista: 'Contratista',
+  supervisor:  'Supervisor',
+  gerente:     'Gerente',
+};
+
 export const getSolicitudes = async (req, res) => {
   try {
-    const solicitudes = await Solicitud.findAll();
+    const { rol, id } = req.usuario;
+    const tipoActor = TIPO_ACTOR_MAP[rol];
+    const solicitudes = tipoActor
+      ? await Solicitud.findByUsuario(id, tipoActor)
+      : await Solicitud.findAll(); // admin ve todo
     res.json({ solicitudes });
   } catch (error) {
     res.status(500).json({ error: error.message });

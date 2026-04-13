@@ -1,8 +1,18 @@
 import Contrato from '../models/Contrato.js';
 
+const TIPO_ACTOR_MAP = {
+  contratista: 'Contratista',
+  supervisor:  'Supervisor',
+  gerente:     'Gerente',
+};
+
 export const getContratos = async (req, res) => {
   try {
-    const contratos = await Contrato.findAll();
+    const { rol, id } = req.usuario;
+    const tipoActor = TIPO_ACTOR_MAP[rol];
+    const contratos = tipoActor
+      ? await Contrato.findByUsuario(id, tipoActor)
+      : await Contrato.findAll(); // admin ve todo
     res.json({ contratos });
   } catch (error) {
     res.status(500).json({ error: error.message });

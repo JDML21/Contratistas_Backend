@@ -18,6 +18,19 @@ const ActoresContrato = {
     return result.rows;
   },
 
+  // Actores de un contrato con datos completos del usuario (JOIN con usuario)
+  findByContratoWithUser: async (contrato_id) => {
+    const result = await pool.query(
+      `SELECT ac.actores_contrato_id, ac.contrato_id, ac.usuario_id, ac.tipo_actor,
+         u.nombre, u.correo, u.identificacion, u.tipo_documento, u.activo
+       FROM actores_contrato ac
+       JOIN usuario u ON u.usuario_id = ac.usuario_id
+       WHERE ac.contrato_id = $1`,
+      [contrato_id]
+    );
+    return result.rows;
+  },
+
   // Todos los contratos en los que participa un usuario
   findByUsuario: async (usuario_id) => {
     const result = await pool.query(

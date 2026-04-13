@@ -24,6 +24,29 @@ const Solicitud = {
     return result.rows;
   },
 
+  // Solicitudes de los contratos en los que el usuario participa con el tipo_actor dado.
+  // Incluye el nombre del primer contratista del contrato para facilitar la vista del supervisor.
+  findByUsuario: async (usuario_id, tipo_actor) => {
+    const result = await pool.query(
+      `SELECT s.*,
+         (
+           SELECT u.nombre
+           FROM actores_contrato ac2
+           JOIN usuario u ON u.usuario_id = ac2.usuario_id
+           WHERE ac2.contrato_id = s.contrato_id AND ac2.tipo_actor = 'Contratista'
+           LIMIT 1
+         ) AS nombre_contratista
+       FROM solicitud s
+       JOIN actores_contrato ac
+         ON ac.contrato_id = s.contrato_id
+         AND ac.usuario_id = $1
+         AND ac.tipo_actor = $2
+       ORDER BY s.created_at DESC`,
+      [usuario_id, tipo_actor]
+    );
+    return result.rows;
+  },
+
   create: async ({ contrato_id, estado = 'Pendiente', comentario = null, planilla_id = null }) => {
     const result = await pool.query(
       `INSERT INTO solicitud (contrato_id, estado, comentario, planilla_id)
