@@ -99,6 +99,11 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'El correo ya está registrado' });
     }
 
+    const identificacionExistente = await Usuario.findOne({ identificacion });
+    if (identificacionExistente) {
+      return res.status(400).json({ error: 'La identificación ya está registrada' });
+    }
+
     const contrasena_hash = await bcrypt.hash(password, 10);
 
     const nuevoUsuario = await Usuario.create({

@@ -40,10 +40,8 @@ export const getSolicitud = async (req, res) => {
 
 export const createSolicitud = async (req, res) => {
   try {
-    const { contrato_id, estado, comentario, planilla_id } = req.body;
-    if (!contrato_id) {
-      return res.status(400).json({ error: 'contrato_id es requerido' });
-    }
+    const contrato_id = req.params.contrato_id;
+    const { estado, comentario, planilla_id } = req.body;
     const solicitud = await Solicitud.create({ contrato_id, estado, comentario, planilla_id });
     res.status(201).json({ solicitud });
   } catch (error) {

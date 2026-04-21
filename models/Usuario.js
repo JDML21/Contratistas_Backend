@@ -14,6 +14,11 @@ const usuarioModel = {
         'SELECT * FROM usuario WHERE usuario_id = $1 LIMIT 1',
         [query.usuario_id]
       );
+    } else if (query.identificacion) {
+      result = await pool.query(
+        'SELECT * FROM usuario WHERE identificacion = $1 LIMIT 1',
+        [query.identificacion]
+      );
     } else {
       return null;
     }
